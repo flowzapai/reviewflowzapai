@@ -1,0 +1,7 @@
+[2026-05-07T09:02:43.577Z] Iniciando servidor Next.js...
+[2026-05-07T09:02:43.598Z] Servidor iniciado! PID: 25284
+[2026-05-07T09:02:43.598Z] Acesse: http://localhost:3000
+[2026-05-07T09:02:44.078Z] [OUT] ▲ Next.js 16.2.5
+[2026-05-07T09:02:44.078Z] [OUT] - Local:         http://localhost:3000
+- Network:       http://0.0.0.0:3000
+✓ Ready in 252ms

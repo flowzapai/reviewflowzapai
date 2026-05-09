@@ -1,0 +1,173 @@
+{
+  "name": "ReviewFlow - Monitorar Avaliações Google",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes",
+              "minutesInterval": 30
+            }
+          ]
+        }
+      },
+      "id": "schedule-trigger",
+      "name": "Agendador",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [250, 300]
+    },
+    {
+      "parameters": {
+        "operation": "httpRequest",
+        "method": "GET",
+        "url": "={{$json.googleApiUrl}}/accounts/={{$json.accountId}}/locations/={{$json.locationId}}/reviews",
+        "options": {}
+      },
+      "id": "google-reviews-node",
+      "name": "Buscar Avaliações Google",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "fallbackOutput": "newReview"
+          },
+          "conditions": [
+            {
+              "value1": "={{$json.newReview}}",
+              "operation": "equal",
+              "value2": true
+            }
+          ]
+        }
+      },
+      "id": "if-new-review",
+      "name": "É Nova?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "operation": "httpRequest",
+        "method": "POST",
+        "url": "={{$json.chatgptUrl}}",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "reviewText",
+              "value": "={{$json.reviewText}}"
+            },
+            {
+              "name": "rating",
+              "value": "={{$json.rating}}"
+            },
+            {
+              "name": "businessName",
+              "value": "={{$json.businessName}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "chatgpt-response",
+      "name": "Gerar Resposta IA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [850, 250]
+    },
+    {
+      "parameters": {
+        "operation": "httpRequest",
+        "method": "POST",
+        "url": "={{$json.googleApiUrl}}/accounts/={{$json.accountId}}/locations/={{$json.locationId}}/reviews/={{$json.reviewId}}/reply",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "comment",
+              "value": "={{$json.aiResponse}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "google-reply-node",
+      "name": "Responder no Google",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [1050, 250]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "data": {
+          "companyId": "={{$json.companyId}}",
+          "source": "GOOGLE",
+          "googleReviewId": "={{$json.reviewId}}",
+          "authorName": "={{$json.authorName}}",
+          "rating": "={{$json.rating}}",
+          "text": "={{$json.reviewText}}",
+          "response": "={{$json.aiResponse}}",
+          "respondedAt": "={{$now}}"
+        }
+      },
+      "id": "prisma-save",
+      "name": "Salvar no Banco",
+      "type": "n8n-nodes-base.prisma",
+      "typeVersion": 1,
+      "position": [1250, 300]
+    }
+  ],
+  "connections": {
+    "Agendador": {
+      "main": [[
+        {
+          "node": "Buscar Avaliações Google",
+          "type": "main",
+          "index": 0
+        }
+      ]]
+    },
+    "Buscar Avaliações Google": {
+      "main": [[
+        {
+          "node": "É Nova?",
+          "type": "main",
+          "index": 0
+        }
+      ]]
+    },
+    "É Nova?": {
+      "main": [[
+        {
+          "node": "Gerar Resposta IA",
+          "type": "main",
+          "index": 0
+        }
+      ]]
+    },
+    "Gerar Resposta IA": {
+      "main": [[
+        {
+          "node": "Responder no Google",
+          "type": "main",
+          "index": 0
+        }
+      ]]
+    },
+    "Responder no Google": {
+      "main": [[
+        {
+          "node": "Salvar no Banco",
+          "type": "main",
+          "index": 0
+        }
+      ]]
+    }
+  }
+}

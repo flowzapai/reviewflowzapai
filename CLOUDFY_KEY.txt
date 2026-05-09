@@ -1,0 +1,10 @@
+# Chave de Implantação Cloudfy
+# ReviewFlow
+
+cfy_f2ca59375055ca97b1457c73d5c01c8a7f84c1bb0ed5aa578c9508b3531ee501
+
+# Como usar:
+# Use esta chave para fazer deploy via API ou CLI
+
+# URL do app:
+# my-app.apps.cloudfy.cloud

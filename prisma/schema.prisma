@@ -1,0 +1,162 @@
+// REVIEWFLOW - Micro SaaS de Automação de Avaliações no Google
+// Database Schema via Prisma (PostgreSQL)
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["multiSchema"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+  schemas  = ["reviewflow", "public"]
+}
+
+model Company {
+  id              String   @id @default(cuid())
+  name            String
+  cnpj            String?  @unique
+  email           String   @unique
+  phone           String?
+  googlePlaceId   String?
+  googleApiKey    String?
+  plan            PlanType @default(STARTER)
+  credits        Int      @default(100)
+  isActive        Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  users         User[]
+  clients      Client[]
+  reviewRequests ReviewRequest[]
+  reviews     Review[]
+  settings    CompanySettings?
+
+  @@schema("reviewflow")
+}
+
+model CompanySettings {
+  id                   String  @id @default(cuid())
+  companyId            String  @unique
+  company              Company @relation(fields: [companyId], references: [id])
+  
+  businessName         String
+  welcomeMessage      String  @default("Olá {nome}! Obrigado por escolher a {empresa}. Gostaria de avaliar nosso serviço?")
+  thankYouMessagePos String  @default("Obrigado! Agradecemos muito sua avaliação positiva!")
+  thankYouMessageNeg String  @default("Agradecemos seu feedback. Entraremos em contato em breve.")
+  googleReviewUrl     String?
+  
+  sendTimingHours    Int      @default(2)
+  enableWhatsApp     Boolean  @default(true)
+  enableEmail        Boolean  @default(false)
+  tonality          String   @default("amigavel")
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@schema("reviewflow")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      UserRole @default(USER)
+  companyId String
+  company  Company  @relation(fields: [companyId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@schema("reviewflow")
+}
+
+model Client {
+  id         String   @id @default(cuid())
+  companyId  String
+  company   Company  @relation(fields: [companyId], references: [id])
+  name      String
+  phone    String?
+  email    String?
+  externalId String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  reviewRequests ReviewRequest[]
+
+  @@schema("reviewflow")
+}
+
+model ReviewRequest {
+  id                String       @id @default(cuid())
+  companyId         String
+  company           Company      @relation(fields: [companyId], references: [id])
+  clientId          String
+  client            Client       @relation(fields: [clientId], references: [id])
+  channel           Channel      @default(WHATSAPP)
+  status            RequestStatus @default(PENDING)
+  message          String?
+  note              Int?
+  sentAt            DateTime?
+  respondedAt       DateTime?
+  redirectedToGoogle Boolean    @default(false)
+  createdAt         DateTime     @default(now())
+  updatedAt         DateTime     @updatedAt
+
+  @@schema("reviewflow")
+}
+
+model Review {
+  id             String       @id @default(cuid())
+  companyId       String
+  company        Company      @relation(fields: [companyId], references: [id])
+  source         ReviewSource @default(GOOGLE)
+  googleReviewId String?
+  authorName     String?
+  rating        Int
+  text          String?
+  response      String?
+  respondedAt   DateTime?
+  createdAt     DateTime     @default(now())
+
+  @@schema("reviewflow")
+}
+
+enum PlanType {
+  STARTER
+  PRO
+  ENTERPRISE
+
+  @@schema("reviewflow")
+}
+
+enum UserRole {
+  ADMIN
+  USER
+
+  @@schema("reviewflow")
+}
+
+enum Channel {
+  WHATSAPP
+  EMAIL
+
+  @@schema("reviewflow")
+}
+
+enum RequestStatus {
+  PENDING
+  SENT
+  OPENED
+  RESPONDED
+  FAILED
+
+  @@schema("reviewflow")
+}
+
+enum ReviewSource {
+  GOOGLE
+  INTERNAL
+
+  @@schema("reviewflow")
+}

@@ -1,0 +1,99 @@
+{
+  "name": "ReviewFlow - Workflows n8n",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "executions": 3
+        },
+        "trigger": "manual"
+      },
+      "id": "webhook-trigger",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [250, 300],
+      "webhookId": "reviewflow-send-invite"
+    },
+    {
+      "parameters": {
+        "operation": "httpRequest",
+        "method": "POST",
+        "url": "={{$json.chatgptUrl}}",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "message",
+              "value": "={{$json.welcomeMessage}}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "chatgpt-node",
+      "name": "Gerar Mensagem IA",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 3,
+      "position": [450, 300]
+    },
+    {
+      "parameters": {
+        "instanceName": "reviewflow",
+        "number": "={{$json.phoneNumber}}",
+        "text": "={{$json.generatedMessage}}",
+        "options": {}
+      },
+      "id": "whatsapp-node",
+      "name": "Enviar WhatsApp",
+      "type": "evolve-tech.evolutionAPI",
+      "typeVersion": 1,
+      "position": [650, 300]
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "id": "={{$json.requestId}}",
+        "updateFields": {
+          "fields": {
+            "status": "SENT",
+            "sentAt": "={{$now}}"
+          }
+        }
+      },
+      "id": "prisma-node",
+      "name": "Atualizar Status",
+      "type": "n8n-nodes-base.prisma",
+      "typeVersion": 1,
+      "position": [850, 300]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [[
+        {
+          "node": "Gerar Mensagem IA",
+          "type": "main",
+          "index": 0
+        }
+      ]]
+    },
+    "Gerar Mensagem IA": {
+      "main": [[
+        {
+          "node": "Enviar WhatsApp",
+          "type": "main",
+          "index": 0
+        }
+      ]]
+    },
+    "Enviar WhatsApp": {
+      "main": [[
+        {
+          "node": "Atualizar Status",
+          "type": "main",
+          "index": 0
+        }
+      ]]
+    }
+  }
+}
